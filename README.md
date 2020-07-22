@@ -1,3 +1,3 @@
 # pizzaorderingbot
 
-This is a pizza ordering bot.
+This is yo yo pizza ordering bot.

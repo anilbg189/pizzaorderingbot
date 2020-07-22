@@ -1,0 +1,484 @@
+﻿<!------ Include the above in your HEAD tag ---------->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat</title>
+
+    <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
+    <link
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+      rel="stylesheet"
+      id="bootstrap-css"
+    />
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+      integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
+      crossorigin="anonymous"
+    />
+
+    <link href="chat.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/malihu-custom-scrollbar-plugin/3.1.5/jquery.mCustomScrollbar.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/malihu-custom-scrollbar-plugin/3.1.5/jquery.mCustomScrollbar.min.js"
+    ></script>
+    <script>
+  $(document).ready(function(){
+    var d = new Date();
+        datetext = d.toTimeString();
+        
+      var initialtime= datetext.split(' ')[0];
+document.getElementById('initialtime').innerHTML=initialtime;
+var taMsgs= document.getElementById("taMsg");
+taMsgs.addEventListener("keydown",function(e)
+{
+if(e.keyCode==13)
+{
+SendMsg();
+
+}
+})
+
+// count the number of messages 
+var lblMsgCount= document.getElementById("lblMsgCount");
+
+var count= $('div .justify-content-start').length + $('div .justify-content-end').length;
+  lblMsgCount.innerText= count+" Messages";
+
+
+
+      });
+
+</script>
+
+    <script>
+      var statuserror='';
+      var error='';
+      var status='';
+      var oid = '';
+      var placed = '';
+      var asking = '';
+      var order = {
+        pizzaname: '',
+        address: '',
+        customername: '',
+        base: '',
+        phonenumber: '',
+        quantity: '',
+        key: '',
+      };
+
+      var intent = '';
+      var orders = [];
+
+      function SendMsg() {
+        var d = new Date();
+        datetext = d.toTimeString();
+        datetext = datetext.split(' ')[0];
+
+        var jQueryLastDataID = $('.justify-content-start:last');
+
+        jQueryLastDataID.after(
+          '<div class="d-flex justify-content-end mb-4"><div class= "msg_cotainer_send" >' +
+            $('.type_msg')[0].value +
+            '<span class= "msg_time_send" > ' +
+            datetext +
+            '</span ></div >' +
+            ' <div class="img_cont_msg"><img src="images/girlChar.jpg" class="rounded-circle user_img_msg"></div></div>'
+        );
+
+        if (intent === '') {
+            var settings = {
+            async: true,
+            crossDomain: true,
+            url:
+              'https://api.wit.ai/message?v=20200721&q=' +
+              $('.type_msg')[0].value,
+            method: 'GET',
+            headers: {
+              Authorization: 'Bearer H43DZCP4LD674BA5S45SVKB2LCVCMVBP',
+            },
+          };
+
+          $.ajax(settings).done(function (response) {
+            try{
+
+            
+            if (
+              response.intents[0].name === 'pizzaorder' ||
+              response.intents[0].name === 'orderstatus'
+            ) {
+              intent = response.intents[0].name;
+              
+            } 
+
+          }
+          catch(err){ 
+            error='true';
+            
+          }
+          RecvMsg();
+          });
+        } else if(intent==='pizzaorder' || intent === 'confirmation'){
+          
+          switch (asking) {
+            case 'pizzaname':
+              order.pizzaname = $('.type_msg')[0].value;
+              break;
+            case 'customername':
+              order.customername = $('.type_msg')[0].value;
+              break;
+            case 'quantity':
+              order.quantity = $('.type_msg')[0].value;
+              break;
+            case 'address':
+              order.address = $('.type_msg')[0].value;
+              break;
+            case 'phonenumber':
+              order.phonenumber = $('.type_msg')[0].value;
+              break;
+            case 'base':
+              order.base = $('.type_msg')[0].value;
+              break;
+            case 'more':
+              order.key = orders.length;
+
+              var settings = {
+                async: true,
+                crossDomain: true,
+                url:
+                  'https://api.wit.ai/message?v=20200721&q=' +
+                  $('.type_msg')[0].value,
+                method: 'GET',
+                headers: {
+                  Authorization: 'Bearer H43DZCP4LD674BA5S45SVKB2LCVCMVBP',
+                },
+              };
+
+              $.ajax(settings).done(function (response) {
+                try{
+
+                if (response.intents[0].name === 'deny') {
+                  intent = 'confirmation';
+                  orders.push(order);
+                  order = {
+                    pizzaname: '',
+                    address: order.address,
+                    customername: order.customername,
+                    base: '',
+                    phonenumber: order.phonenumber,
+                    quantity: '',
+                    key: '',
+                  };
+                } else {
+                  orders.push(order);
+                  order = {
+                    pizzaname: '',
+                    address: order.address,
+                    customername: order.customername,
+                    base: '',
+                    phonenumber: order.phonenumber,
+                    quantity: '',
+                    key: '',
+                  };
+                }
+                }
+                catch(err){
+                  error='true';
+                }
+                RecvMsg();
+              });
+              break;
+            case 'confirmation':
+              var settings = {
+                async: true,
+                crossDomain: true,
+                url:
+                  'https://api.wit.ai/message?v=20200721&q=' +
+                  $('.type_msg')[0].value,
+                method: 'GET',
+                headers: {
+                  Authorization: 'Bearer H43DZCP4LD674BA5S45SVKB2LCVCMVBP',
+                },
+              };
+
+              $.ajax(settings).done(function (response) {
+                try{
+                if (response.intents[0].name === 'deny') {
+                  placed = 'no';
+                  intent = '';
+                  orders = [];
+                  order = {
+                    pizzaname: '',
+                    address: '',
+                    customername: '',
+                    base: '',
+                    phonenumber: '',
+                    quantity: '',
+                    key: '',
+                  };
+                RecvMsg();
+                } else if(response.intents[0].name === 'affirm') {
+                  
+                  //call php to insert in database
+                  $.ajax({
+                    type: 'POST',
+                    url: 'server.php',
+                    data: {data:JSON.stringify(orders)},
+                    async: true,
+                    crossDomain: true,
+                  }).done(function (response) {
+                    oid=response;
+                    
+                    
+                    order = {
+                    pizzaname: '',
+                    address: '',
+                    customername: '',
+                    base: '',
+                    phonenumber: '',
+                    quantity: '',
+                    key: '',
+                  };
+                  orders = [];
+                  placed = 'yes';
+                  intent = '';
+                  RecvMsg();
+                    
+                  });
+                  
+                  
+                }
+                }
+                catch(err){
+                  error='true';
+                  RecvMsg();
+                }
+                
+                //call recieve function
+              });
+              break;
+            default:
+          }
+          if (asking === 'confirmation' || asking === 'more') {
+            asking=''
+          } else {
+            RecvMsg();
+          }
+        }else if(intent==='orderstatus')
+        {
+          
+          oid=$('.type_msg')[0].value;
+          $.ajax({
+                    type: 'POST',
+                    url: 'status.php',
+                    data: {"oid":oid},
+                    async: true,
+                    crossDomain: true,
+                  }).done(function (response) {
+                    status=response;
+                    if(status=='order placed' || status=='getting prepared' || status=='in delivery' )
+                    {
+                      
+                    }
+                    else{
+                      statuserror='true';
+                    }
+                    intent='';
+                    RecvMsg();
+                  });
+          
+        }
+        
+        $('.type_msg')[0].value = '';
+      }
+
+      function RecvMsg() {
+        
+        var text = '';
+
+        if (intent === '') {
+          if (placed === 'yes') {
+            text = 'Order successfully placed. Your order ID is '+oid+ '.</br>';
+            placed='';
+          } else if (placed === 'no') {
+            text = 'Order Cancled';
+            placed = '';
+          }else{
+            if(status=='order placed' || status=='getting prepared' || status=='in delivery' )
+              {
+                text='Your order status is '+ status + '.</br>';
+                }
+            else{
+              if(statuserror==='true')
+              {
+                text="Invalid Order ID </br> How can I help you ?";
+                statuserror='';
+              }
+              else{
+                text='Sorry I could not get you :(  </br> How can I help you ?'
+              }
+                
+                error='';
+            }
+          }
+          
+          //text = text + 'Hey, How can I help you';
+        } else if (intent === 'pizzaorder') {
+          if (error==='true')
+          {
+            text='Sorry could not get you </br>';
+            error='';
+          }
+          if (order.pizzaname === '') {
+            text =
+              'We have mushroom, corn and tomato pizza. Which one do you want ?';
+            asking = 'pizzaname';
+          } else if (order.quantity === '') {
+            text = 'How much quantity';
+            asking = 'quantity';
+          } else if (order.base === '') {
+            text = 'Which base you want? Thin crust,Thick crust or normal ?';
+            asking = 'base';
+          } else if (order.customername === '') {
+            text = 'What is your name';
+            asking = 'customername';
+          } else if (order.phonenumber === '') {
+            text = 'Tell me your phone number';
+            asking = 'phonenumber';
+          } else if (order.address === '') {
+            text = 'What is your address';
+            asking = 'address';
+          } else {
+            text =text + 'Do you want some more pizza ?';
+            asking = 'more';
+          }
+        } else if (intent === 'confirmation') {
+          if(error==='true'){
+            text='Sorry could not get you</br>'
+          }
+          text = text+ 'Do you want to confirm the order ?';
+          asking = 'confirmation';
+        } else if(intent==='orderstatus'){
+          text = 'Give your Order id of which you want to check the status';
+          
+        }else if(error='true'){
+          text="Sorry I couldn't get you :("
+          error='';
+        }
+
+        var d = new Date();
+        datetext = d.toTimeString();
+        datetext = datetext.split(' ')[0];
+
+
+
+        var jQueryLastDataID = $('.justify-content-end:last');
+
+        jQueryLastDataID.after(
+          '<div class="d-flex justify-content-start mb-4"><div class= "img_cont_msg" >' +
+            '<img src = "images/BoyCharacter.jpg" class= "rounded-circle user_img_msg"></div><div class="msg_cotainer">' +
+            text +
+            '<span class="msg_time">' +
+            datetext +
+            '</span> </div></div >'
+        );
+        
+// scroll down
+        var d = document.getElementById("divCard");
+        d.scrollTop=d.scrollHeight;
+// count the number of messages 
+var lblMsgCount= document.getElementById("lblMsgCount");
+
+var count= $('div .justify-content-start').length + $('div .justify-content-end').length;
+  lblMsgCount.innerText= count+" Messages";
+
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row justify-content-center h-100">
+        <div class="col-md-8 col-xl-6 chat">
+          <div class="card">
+            <div class="card-header msg_head">
+              <div class="d-flex bd-highlight">
+                <div class="img_cont">
+                  <img
+                    src="images/BoyCharacter.jpg"
+                    class="rounded-circle user_img"
+                  />
+                  <span class="online_icon"></span>
+                </div>
+                <div class="user_info">
+                  <span>Yo Yo Pizza</span>
+                  <p><div id="lblMsgCount"></div></p>
+                </div>
+              </div>
+              <span id="action_menu_btn"
+                ></span>
+              <div class="action_menu">
+                <ul>
+                  <li><i class="fas fa-user-circle"></i> View profile</li>
+                  <li><i class="fas fa-users"></i> Add to close friends</li>
+                  <li><i class="fas fa-plus"></i> Add to group</li>
+                  <li><i class="fas fa-ban"></i> Block</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <p id="custId"></p>
+            </div>
+            <div id="divCard" class="card-body msg_card_body">
+              
+              
+              
+              
+              
+              
+              <div class="d-flex justify-content-start mb-4">
+                <div class="img_cont_msg">
+                  <img
+                    src="images/BoyCharacter.jpg"
+                    class="rounded-circle user_img_msg"
+                  />
+                </div>
+                <div class="msg_cotainer">
+                  Hey, How can I help ?
+                  <span class="msg_time" id="initialtime">Now</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="input-group">
+                <div class="input-group-append">
+                  <span class="input-group-text attach_btn"
+                    ></span>
+                </div>
+                <textarea id="taMsg"
+                  name=""
+                  class="form-control type_msg"
+                  placeholder="Type your message..."
+                ></textarea>
+                <div class="input-group-append">
+                  <span class="input-group-text send_btn" onclick="SendMsg()"
+                    ><i class="fas fa-location-arrow"></i
+                  ></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
